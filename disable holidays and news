@@ -1,0 +1,30 @@
+<#
+.SYNOPSIS
+    Disable news, holidays, and other content in Windows 11 search bar
+.DESCRIPTION
+    Turns off Search Highlights and other dynamic content in the taskbar/search.
+    Run PowerShell as Administrator.
+#>
+
+# Ensure running as Administrator
+If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+    [Security.Principal.WindowsBuiltInRole] "Administrator"))
+{
+    Write-Warning "Please run this script as Administrator!"
+    Break
+}
+
+Write-Host "Disabling news, holidays, and dynamic content in Windows 11 search bar..." -ForegroundColor Cyan
+
+# --- Disable Search Highlights (includes news, holidays, stock tips, etc.) ---
+$searchRegistryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"
+If (-Not (Test-Path $searchRegistryPath)) {
+    New-Item -Path $searchRegistryPath -Force | Out-Null
+}
+
+# Disable Search Highlights
+Set-ItemProperty -Path $searchRegistryPath -Name "DisableSearchBoxSuggestions" -Value 1 -Type DWord
+Set-ItemProperty -Path $searchRegistryPath -Name "DisableSearchHighlights" -Value 1 -Type DWord
+Set-ItemProperty -Path $searchRegistryPath -Name "DisableSearchBoxSuggestionsTips" -Value 1 -Type DWord
+
+Write-Host "News, holidays, and dynamic content in the search bar have been disabled." -ForegroundColor Green
