@@ -1,0 +1,31 @@
+<#
+.SYNOPSIS
+    Disable all weather features in Windows 11
+.DESCRIPTION
+    Disables Windows Widgets and uninstalls the Weather app to remove weather information.
+    Run PowerShell as Administrator.
+#>
+
+# Ensure running as Administrator
+If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+    [Security.Principal.WindowsBuiltInRole] "Administrator"))
+{
+    Write-Warning "Please run this script as Administrator!"
+    Break
+}
+
+Write-Host "Disabling Windows 11 weather features..." -ForegroundColor Cyan
+
+# --- Disable Widgets (includes weather info) ---
+$widgetsRegistryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"
+If (-Not (Test-Path $widgetsRegistryPath)) {
+    New-Item -Path $widgetsRegistryPath -Force | Out-Null
+}
+Set-ItemProperty -Path $widgetsRegistryPath -Name "AllowWidgets" -Value 0 -Type DWord
+
+# --- Uninstall the Weather app ---
+$weatherApp = "Microsoft.BingWeather"
+Get-AppxPackage -Name $weatherApp -AllUsers | Remove-AppxPackage -ErrorAction SilentlyContinue
+Get-AppxProvisionedPackage -Online | Where-Object DisplayName -EQ $weatherApp | Remove-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue
+
+Write-Host "All Windows 11 weather features have been disabled." -ForegroundColor Green
