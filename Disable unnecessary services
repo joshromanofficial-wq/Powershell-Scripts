@@ -1,0 +1,45 @@
+<#
+.SYNOPSIS
+    Disable unnecessary Windows services permanently (Keeps Xbox services)
+.DESCRIPTION
+    Safely disables non-essential Windows 11 services while keeping Xbox functionality.
+    Run PowerShell as Administrator.
+#>
+
+# Ensure script runs as Admin
+If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+    [Security.Principal.WindowsBuiltInRole] "Administrator"))
+{
+    Write-Warning "Run this script as Administrator!"
+    Break
+}
+
+Write-Host "Starting service optimization..." -ForegroundColor Cyan
+
+# List of non-essential services to disable (excluding Xbox services)
+$servicesToDisable = @(
+    "DiagTrack",                # Connected User Experiences and Telemetry
+    "dmwappushservice",         # Device Management Wireless Application Protocol
+    "RetailDemo",               # Retail demo mode
+    "WMPNetworkSvc",            # Windows Media Player Network Sharing Service
+    "Fax",                      # Fax service (if unused)
+    "PhoneSvc",                 # Mobile Plans / Phone
+    "WbioSrvc",                 # Windows Biometric Service (if no biometric login)
+    "MapsBroker",               # Windows Maps
+    "PrintNotify",              # Printer status notifications
+    "Spooler",                  # Only disable if no printer is used
+    "SysMain",                  # Superfetch / Preloading (optional)
+    "TabletInputService",       # Touch keyboard (if no tablet input)
+    "WSearch"                   # Windows Search (disable only if you don’t use search indexing)
+)
+
+foreach ($svc in $servicesToDisable) {
+    $service = Get-Service -Name $svc -ErrorAction SilentlyContinue
+    if ($service) {
+        Write-Host "Disabling $svc..." -ForegroundColor Yellow
+        Stop-Service -Name $svc -Force -ErrorAction SilentlyContinue
+        Set-Service -Name $svc -StartupType Disabled
+    }
+}
+
+Write-Host "`nService optimization complete! Xbox services remain active."
