@@ -1,0 +1,31 @@
+<#
+.SYNOPSIS
+    Disable Remote Desktop (RDP) on Windows
+.DESCRIPTION
+    Turns off Remote Desktop and blocks RDP connections in the firewall.
+    Run PowerShell as Administrator.
+#>
+
+# Ensure running as Administrator
+If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+    [Security.Principal.WindowsBuiltInRole] "Administrator"))
+{
+    Write-Warning "Run this script as Administrator!"
+    Break
+}
+
+Write-Host "Disabling Remote Desktop..." -ForegroundColor Cyan
+
+# Disable Remote Desktop
+Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 1
+
+# Disable RDP in the firewall
+If (Get-NetFirewallRule -DisplayName "Remote Desktop - User Mode (TCP-In)" -ErrorAction SilentlyContinue) {
+    Set-NetFirewallRule -DisplayName "Remote Desktop - User Mode (TCP-In)" -Enabled False
+}
+
+If (Get-NetFirewallRule -DisplayName "Remote Desktop - User Mode (UDP-In)" -ErrorAction SilentlyContinue) {
+    Set-NetFirewallRule -DisplayName "Remote Desktop - User Mode (UDP-In)" -Enabled False
+}
+
+Write-Host "Remote Desktop has been disabled and firewall rules updated." -ForegroundColor Green
