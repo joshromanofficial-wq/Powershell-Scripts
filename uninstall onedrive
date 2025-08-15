@@ -1,0 +1,54 @@
+<#
+.SYNOPSIS
+    Uninstall OneDrive from Windows 11
+.DESCRIPTION
+    Stops OneDrive, uninstalls it, and removes leftover files.
+    Run PowerShell as Administrator.
+#>
+
+# Ensure running as Administrator
+If (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole(`
+    [Security.Principal.WindowsBuiltInRole] "Administrator"))
+{
+    Write-Warning "Please run this script as Administrator!"
+    Break
+}
+
+Write-Host "Uninstalling OneDrive..." -ForegroundColor Cyan
+
+# Stop OneDrive if running
+Stop-Process -Name "OneDrive" -Force -ErrorAction SilentlyContinue
+
+# Determine OneDriveSetup path based on system architecture
+if ($env:PROCESSOR_ARCHITECTURE -eq "x86") {
+    $OneDriveSetup = "$env:SystemRoot\SysWOW64\OneDriveSetup.exe"
+} else {
+    $OneDriveSetup = "$env:SystemRoot\System32\OneDriveSetup.exe"
+}
+
+# Uninstall OneDrive
+if (Test-Path $OneDriveSetup) {
+    & $OneDriveSetup /uninstall
+    Write-Host "OneDrive uninstall command executed." -ForegroundColor Green
+} else {
+    Write-Warning "OneDriveSetup.exe not found."
+}
+
+# Remove leftover folders for all users
+$OneDrivePaths = @(
+    "$env:SystemDrive\Users\$env:USERNAME\OneDrive",
+    "$env:LOCALAPPDATA\Microsoft\OneDrive",
+    "$env:PROGRAMDATA\Microsoft OneDrive"
+)
+
+foreach ($path in $OneDrivePaths) {
+    if (Test-Path $path) {
+        Remove-Item $path -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "Removed folder: $path" -ForegroundColor Yellow
+    }
+}
+
+# Disable OneDrive via registry (prevents future sync)
+reg add "HKLM\SOFTWARE\Policies\Microsoft\Windows\OneDrive" /v "DisableFileSyncNGSC" /t REG_DWORD /d 1 /f
+
+Write-Host "OneDrive has been fully uninstalled and disabled." -ForegroundColor Green
